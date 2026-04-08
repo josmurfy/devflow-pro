@@ -12,7 +12,7 @@ import { InstallManager } from './installManager';
 import { ChangelogParser } from './changelogParser';
 import { UpdateInfo, BackupInfo } from './models';
 
-const EXTENSION_ID = 'phoenixdepot.devflow-pro';
+const EXTENSION_ID = 'josmurfy.devflow-pro';
 const BACKUP_STATE_KEY = 'lastVersionBackup';
 const SNOOZE_STATE_KEY = 'updateSnoozedUntil';
 

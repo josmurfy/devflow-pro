@@ -3,7 +3,7 @@
   "displayName": "DevFlow Pro",
   "description": "AI-powered bug fixing automation for VS Code with GitHub Copilot",
   "version": "1.0.1",
-  "publisher": "phoenixdepot",
+  "publisher": "josmurfy",
   "icon": "resources/icon.png",
   "repository": {
     "type": "git",

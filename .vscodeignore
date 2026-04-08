@@ -2,12 +2,10 @@
 .vscode-test/**
 src/**
 **/*.map
-!out/**
 node_modules/**
 out/test/**
 .gitignore
 tsconfig.json
 scripts/**
-resources/**
 updates/**
 *.vsix
