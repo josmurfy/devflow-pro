@@ -5,7 +5,6 @@
  */
 
 import * as vscode from 'vscode';
-import * as semver from 'semver';
 import { VersionChecker } from './versionChecker';
 import { DownloadManager } from './downloadManager';
 import { InstallManager } from './installManager';
@@ -15,6 +14,23 @@ import { UpdateInfo, BackupInfo } from './models';
 const EXTENSION_ID = 'josmurfy.devflow-pro';
 const BACKUP_STATE_KEY = 'lastVersionBackup';
 const SNOOZE_STATE_KEY = 'updateSnoozedUntil';
+
+/** Compare two semver strings. Returns true if a > b */
+function semverGt(a: string, b: string): boolean {
+    const pa = a.replace(/[^0-9.]/g, '').split('.').map(Number);
+    const pb = b.replace(/[^0-9.]/g, '').split('.').map(Number);
+    for (let i = 0; i < 3; i++) {
+        const na = pa[i] ?? 0;
+        const nb = pb[i] ?? 0;
+        if (na !== nb) { return na > nb; }
+    }
+    return false;
+}
+
+/** Returns true if a < b */
+function semverLt(a: string, b: string): boolean {
+    return semverGt(b, a);
+}
 
 export class UpdateManager {
     private static instance: UpdateManager | null = null;
@@ -88,7 +104,7 @@ export class UpdateManager {
             // Check VS Code minimum version compatibility
             const vsCodeVersion = vscode.version;
             const minRequired = latest.minVSCodeVersion.replace(/^\^/, '');
-            if (semver.lt(vsCodeVersion, minRequired)) {
+            if (semverLt(vsCodeVersion, minRequired)) {
                 if (showNoUpdateMessage) {
                     vscode.window.showWarningMessage(
                         `DevFlow Pro v${latest.version} requires VS Code ${latest.minVSCodeVersion}. Please update VS Code first.`
@@ -97,7 +113,7 @@ export class UpdateManager {
                 return null;
             }
 
-            if (semver.gt(latest.version, this.currentVersion)) {
+            if (semverGt(latest.version, this.currentVersion)) {
                 await this.showUpdateNotification(latest);
                 return latest;
             } else {

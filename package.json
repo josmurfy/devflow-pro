@@ -2,7 +2,7 @@
   "name": "devflow-pro",
   "displayName": "DevFlow Pro",
   "description": "AI-powered bug fixing automation for VS Code with GitHub Copilot",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "publisher": "josmurfy",
   "icon": "resources/icon.jpg",
   "repository": {
@@ -91,13 +91,9 @@
   "devDependencies": {
     "@types/vscode": "^1.85.0",
     "@types/node": "20.x",
-    "@types/semver": "^7.5.0",
     "typescript": "^5.3.0",
     "@vscode/test-cli": "^0.0.4",
     "@vscode/test-electron": "^2.3.0",
     "@vscode/vsce": "^2.22.0"
-  },
-  "dependencies": {
-    "semver": "^7.5.4"
   }
 }
