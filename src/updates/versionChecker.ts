@@ -14,7 +14,7 @@ export class VersionChecker {
     }
 
     private getUpdateServerUrl(): string {
-        const baseUrl = 'https://phoenixdepot.com/devflow/updates';
+        const baseUrl = 'https://www.phoenixdepot.com/devflow/updates';
         return `${baseUrl}/${this.channel}/manifest.json`;
     }
 
