@@ -2,7 +2,7 @@
   "name": "devflow-pro",
   "displayName": "DevFlow Pro",
   "description": "AI-powered bug fixing automation for VS Code with GitHub Copilot",
-  "version": "1.0.4",
+  "version": "1.0.6",
   "publisher": "josmurfy",
   "icon": "resources/icon.jpg",
   "repository": {
@@ -74,7 +74,7 @@
         },
         "devflow.updates.serverUrl": {
           "type": "string",
-          "default": "https://www.phoenixdepot.com/devflow/updates",
+          "default": "https://phoenixliquidation.ca/devflow/updates",
           "description": "Custom update server URL (advanced users)"
         }
       }

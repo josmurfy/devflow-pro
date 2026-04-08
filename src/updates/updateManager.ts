@@ -92,7 +92,7 @@ export class UpdateManager {
 
         try {
             const checker = new VersionChecker(this.updateChannel);
-            const latest = await checker.getLatestVersion();
+            const latest = await checker.getLatestFromGitHub();
 
             if (!latest) {
                 if (showNoUpdateMessage) {
