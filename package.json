@@ -4,7 +4,7 @@
   "description": "AI-powered bug fixing automation for VS Code with GitHub Copilot",
   "version": "1.0.1",
   "publisher": "josmurfy",
-  "icon": "resources/icon.png",
+  "icon": "resources/icon.jpg",
   "repository": {
     "type": "git",
     "url": "https://github.com/josmurfy/devflow-pro"
