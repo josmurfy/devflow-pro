@@ -2,7 +2,7 @@
   "name": "devflow-pro",
   "displayName": "DevFlow Pro",
   "description": "AI-powered bug fixing automation for VS Code with GitHub Copilot",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "publisher": "josmurfy",
   "icon": "resources/icon.jpg",
   "repository": {
