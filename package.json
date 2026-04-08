@@ -1,0 +1,103 @@
+{
+  "name": "devflow-pro",
+  "displayName": "DevFlow Pro",
+  "description": "AI-powered bug fixing automation for VS Code with GitHub Copilot",
+  "version": "1.0.1",
+  "publisher": "phoenixdepot",
+  "icon": "resources/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/josmurfy/devflow-pro"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other",
+    "Debuggers"
+  ],
+  "keywords": [
+    "bug", "debug", "automation", "copilot", "ai"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "devflow.checkForUpdates",
+        "title": "Check for Updates",
+        "category": "DevFlow"
+      },
+      {
+        "command": "devflow.rollbackVersion",
+        "title": "Rollback to Previous Version",
+        "category": "DevFlow"
+      },
+      {
+        "command": "devflow.switchUpdateChannel",
+        "title": "Switch Update Channel (Stable/Beta)",
+        "category": "DevFlow"
+      }
+    ],
+    "configuration": {
+      "title": "DevFlow Pro",
+      "properties": {
+        "devflow.updates.autoCheck": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically check for updates on startup"
+        },
+        "devflow.updates.channel": {
+          "type": "string",
+          "enum": ["stable", "beta"],
+          "default": "stable",
+          "description": "Update channel to use (stable = production, beta = early access)"
+        },
+        "devflow.updates.autoDownload": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically download updates when available (requires manual install)"
+        },
+        "devflow.updates.autoInstall": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically install updates without confirmation (not recommended)"
+        },
+        "devflow.updates.checkInterval": {
+          "type": "number",
+          "default": 6,
+          "minimum": 1,
+          "maximum": 168,
+          "description": "Hours between automatic update checks"
+        },
+        "devflow.updates.serverUrl": {
+          "type": "string",
+          "default": "https://phoenixdepot.com/devflow/updates",
+          "description": "Custom update server URL (advanced users)"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile",
+    "test": "vscode-test",
+    "package": "vsce package --no-dependencies",
+    "build": "npm run compile && npm run package"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "20.x",
+    "@types/semver": "^7.5.0",
+    "typescript": "^5.3.0",
+    "@vscode/test-cli": "^0.0.4",
+    "@vscode/test-electron": "^2.3.0",
+    "@vscode/vsce": "^2.22.0"
+  },
+  "dependencies": {
+    "semver": "^7.5.4"
+  }
+}
