@@ -61,30 +61,65 @@ export class InstallManager {
      * Detect the VS Code executable path based on the current platform
      */
     private getCodeCommand(): string | null {
+        // 1. Try the PATH first (most common on desktop installs)
+        try {
+            const result = cp.execSync('which code 2>/dev/null || where code 2>nul', { encoding: 'utf8' }).trim();
+            if (result && fs.existsSync(result)) { return result; }
+        } catch { /* ignore */ }
+
         const platform = process.platform;
 
+        // 2. Standard desktop paths
+        const standardPaths: string[] = [];
+
         if (platform === 'darwin') {
-            // Check both standard and Insiders paths
-            const paths = [
+            standardPaths.push(
                 '/usr/local/bin/code',
                 '/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code'
-            ];
-            return paths.find((p) => { try { fs.accessSync(p); return true; } catch { return false; } }) ?? null;
+            );
+        } else if (platform === 'win32') {
+            const pf = process.env['ProgramFiles'] ?? 'C:\\Program Files';
+            const pf86 = process.env['ProgramFiles(x86)'] ?? 'C:\\Program Files (x86)';
+            standardPaths.push(
+                `${pf}\\Microsoft VS Code\\bin\\code.cmd`,
+                `${pf86}\\Microsoft VS Code\\bin\\code.cmd`
+            );
+        } else {
+            // Linux standard
+            standardPaths.push('/usr/bin/code', '/usr/local/bin/code', '/snap/bin/code');
         }
 
-        if (platform === 'win32') {
-            const programFiles = process.env['ProgramFiles'] ?? 'C:\\Program Files';
-            const programFilesX86 = process.env['ProgramFiles(x86)'] ?? 'C:\\Program Files (x86)';
-            const paths = [
-                `${programFiles}\\Microsoft VS Code\\bin\\code.cmd`,
-                `${programFilesX86}\\Microsoft VS Code\\bin\\code.cmd`
-            ];
-            return paths.find((p) => { try { fs.accessSync(p); return true; } catch { return false; } }) ?? null;
+        for (const p of standardPaths) {
+            try { fs.accessSync(p); return p; } catch { /* skip */ }
         }
 
-        // Linux
-        const paths = ['/usr/bin/code', '/usr/local/bin/code', '/snap/bin/code'];
-        return paths.find((p) => { try { fs.accessSync(p); return true; } catch { return false; } }) ?? null;
+        // 3. VS Code Server remote-cli (Linux VPS / SSH remote development)
+        // Pattern: ~/.vscode-server/cli/servers/Stable-*/server/bin/remote-cli/code
+        const vscodeServerRoots = [
+            process.env['HOME'],
+            '/root',
+            '/home/' + (process.env['USER'] ?? '')
+        ].filter(Boolean) as string[];
+
+        for (const root of vscodeServerRoots) {
+            const cliDir = `${root}/.vscode-server/cli/servers`;
+            if (!fs.existsSync(cliDir)) { continue; }
+
+            try {
+                // Get all Stable-* entries sorted by mtime descending (most recent first)
+                const entries = fs.readdirSync(cliDir)
+                    .filter(e => e.startsWith('Stable-'))
+                    .map(e => ({ name: e, mtime: fs.statSync(`${cliDir}/${e}`).mtimeMs }))
+                    .sort((a, b) => b.mtime - a.mtime);
+
+                for (const entry of entries) {
+                    const codePath = `${cliDir}/${entry.name}/server/bin/remote-cli/code`;
+                    try { fs.accessSync(codePath); return codePath; } catch { /* skip */ }
+                }
+            } catch { /* skip */ }
+        }
+
+        return null;
     }
 
     /**
