@@ -1,8 +1,8 @@
 {
   "name": "devflow-pro",
   "displayName": "DevFlow Pro",
-  "description": "AI-powered bug fixing automation for VS Code with GitHub Copilot",
-  "version": "1.0.7",
+  "description": "Debug Logger Manager for OpenCart 4.x — manage bug tickets, Copilot integration",
+  "version": "2.0.0",
   "publisher": "josmurfy",
   "icon": "resources/icon.jpg",
   "repository": {
@@ -17,7 +17,13 @@
     "Debuggers"
   ],
   "keywords": [
-    "bug", "debug", "automation", "copilot", "ai"
+    "bug",
+    "debug",
+    "opencart",
+    "copilot",
+    "ai",
+    "tickets",
+    "debug-logger"
   ],
   "activationEvents": [
     "onStartupFinished"
@@ -28,7 +34,8 @@
       {
         "command": "devflow.checkForUpdates",
         "title": "Check for Updates",
-        "category": "DevFlow"
+        "category": "DevFlow",
+        "icon": "$(cloud-download)"
       },
       {
         "command": "devflow.rollbackVersion",
@@ -39,8 +46,135 @@
         "command": "devflow.switchUpdateChannel",
         "title": "Switch Update Channel (Stable/Beta)",
         "category": "DevFlow"
+      },
+      {
+        "command": "devflow.showOutput",
+        "title": "Show Output Log",
+        "category": "DevFlow"
+      },
+      {
+        "command": "debugLogger.configure",
+        "title": "Configure Database",
+        "category": "Debug Logger",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "debugLogger.refresh",
+        "title": "Refresh Tickets",
+        "category": "Debug Logger",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "debugLogger.showTicket",
+        "title": "Show Ticket Details",
+        "category": "Debug Logger"
+      },
+      {
+        "command": "debugLogger.sendToCopilot",
+        "title": "Send to Copilot",
+        "category": "Debug Logger",
+        "icon": "$(hubot)"
+      },
+      {
+        "command": "debugLogger.closeTicket",
+        "title": "Close Ticket",
+        "category": "Debug Logger",
+        "icon": "$(check)"
+      },
+      {
+        "command": "debugLogger.reopenTicket",
+        "title": "Reopen Ticket",
+        "category": "Debug Logger"
+      },
+      {
+        "command": "debugLogger.deleteTicket",
+        "title": "Delete Ticket",
+        "category": "Debug Logger",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "debugLogger.openRelatedFiles",
+        "title": "Open Related Files",
+        "category": "Debug Logger",
+        "icon": "$(file-code)"
       }
     ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "devflow",
+          "title": "DevFlow Pro",
+          "icon": "$(extensions)"
+        },
+        {
+          "id": "debugLogger",
+          "title": "Debug Logger",
+          "icon": "$(bug)"
+        }
+      ]
+    },
+    "views": {
+      "devflow": [
+        {
+          "id": "devflow.statusView",
+          "name": "Status",
+          "type": "tree"
+        }
+      ],
+      "debugLogger": [
+        {
+          "id": "debugLogger.ticketList",
+          "name": "Tickets",
+          "type": "tree"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "devflow.checkForUpdates",
+          "when": "view == devflow.statusView",
+          "group": "navigation"
+        },
+        {
+          "command": "debugLogger.refresh",
+          "when": "view == debugLogger.ticketList",
+          "group": "navigation@1"
+        },
+        {
+          "command": "debugLogger.configure",
+          "when": "view == debugLogger.ticketList",
+          "group": "navigation@2"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "debugLogger.sendToCopilot",
+          "when": "view == debugLogger.ticketList && viewItem =~ /ticket/",
+          "group": "inline@1"
+        },
+        {
+          "command": "debugLogger.openRelatedFiles",
+          "when": "view == debugLogger.ticketList && viewItem =~ /ticket/",
+          "group": "1_actions@1"
+        },
+        {
+          "command": "debugLogger.closeTicket",
+          "when": "view == debugLogger.ticketList && viewItem == ticket-open",
+          "group": "1_actions@2"
+        },
+        {
+          "command": "debugLogger.reopenTicket",
+          "when": "view == debugLogger.ticketList && viewItem == ticket-closed",
+          "group": "1_actions@2"
+        },
+        {
+          "command": "debugLogger.deleteTicket",
+          "when": "view == debugLogger.ticketList && viewItem =~ /ticket/",
+          "group": "2_danger@1"
+        }
+      ]
+    },
     "configuration": {
       "title": "DevFlow Pro",
       "properties": {
@@ -51,7 +185,10 @@
         },
         "devflow.updates.channel": {
           "type": "string",
-          "enum": ["stable", "beta"],
+          "enum": [
+            "stable",
+            "beta"
+          ],
           "default": "stable",
           "description": "Update channel to use (stable = production, beta = early access)"
         },
@@ -89,11 +226,14 @@
     "build": "npm run compile && npm run package"
   },
   "devDependencies": {
+    "@types/node": "^20.19.39",
     "@types/vscode": "^1.85.0",
-    "@types/node": "20.x",
-    "typescript": "^5.3.0",
     "@vscode/test-cli": "^0.0.4",
     "@vscode/test-electron": "^2.3.0",
-    "@vscode/vsce": "^2.22.0"
+    "@vscode/vsce": "^2.22.0",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "mysql2": "^3.21.0"
   }
 }

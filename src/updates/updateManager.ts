@@ -10,6 +10,9 @@ import { DownloadManager } from './downloadManager';
 import { InstallManager } from './installManager';
 import { ChangelogParser } from './changelogParser';
 import { UpdateInfo, BackupInfo } from './models';
+import { OutputLogger } from '../ui/outputLogger';
+import { SmartStatusBar } from '../ui/smartStatusBar';
+import { DevFlowTreeProvider } from '../ui/devFlowTreeProvider';
 
 const EXTENSION_ID = 'josmurfy.devflow-pro';
 const BACKUP_STATE_KEY = 'lastVersionBackup';
@@ -39,10 +42,21 @@ export class UpdateManager {
     private autoCheckEnabled: boolean;
     private checkIntervalHours: number;
     private checkIntervalHandle: ReturnType<typeof setInterval> | null = null;
+    private logger: OutputLogger;
+    private statusBar: SmartStatusBar;
+    private treeProvider: DevFlowTreeProvider;
 
-    private constructor(private context: vscode.ExtensionContext) {
+    private constructor(
+        private context: vscode.ExtensionContext,
+        logger: OutputLogger,
+        statusBar: SmartStatusBar,
+        treeProvider: DevFlowTreeProvider
+    ) {
         const manifest = context.extension.packageJSON as { version: string };
         this.currentVersion = manifest.version;
+        this.logger = logger;
+        this.statusBar = statusBar;
+        this.treeProvider = treeProvider;
 
         const config = vscode.workspace.getConfiguration('devflow');
         this.updateChannel = config.get<'stable' | 'beta'>('updates.channel', 'stable');
@@ -50,9 +64,17 @@ export class UpdateManager {
         this.checkIntervalHours = config.get<number>('updates.checkInterval', 6);
     }
 
-    static getInstance(context: vscode.ExtensionContext): UpdateManager {
+    static getInstance(
+        context: vscode.ExtensionContext,
+        logger?: OutputLogger,
+        statusBar?: SmartStatusBar,
+        treeProvider?: DevFlowTreeProvider
+    ): UpdateManager {
         if (!UpdateManager.instance) {
-            UpdateManager.instance = new UpdateManager(context);
+            if (!logger || !statusBar || !treeProvider) {
+                throw new Error('UpdateManager requires logger, statusBar, and treeProvider on first initialization');
+            }
+            UpdateManager.instance = new UpdateManager(context, logger, statusBar, treeProvider);
         }
         return UpdateManager.instance;
     }
@@ -87,14 +109,22 @@ export class UpdateManager {
         // Respect user snooze
         const snoozedUntil = this.context.globalState.get<number>(SNOOZE_STATE_KEY);
         if (snoozedUntil && Date.now() < snoozedUntil && !showNoUpdateMessage) {
+            this.logger.info('Update check skipped (snoozed)');
             return null;
         }
+
+        this.logger.info(`Checking for updates (channel: ${this.updateChannel})...`);
+        this.statusBar.setState('checking');
+        this.treeProvider.updateStatus({ lastCheckTime: new Date().toISOString() });
 
         try {
             const checker = new VersionChecker(this.updateChannel);
             const latest = await checker.getLatestVersion();
 
             if (!latest) {
+                this.logger.warn('Could not reach the update server');
+                this.statusBar.setState('error');
+                this.treeProvider.updateStatus({ lastCheckResult: 'error' });
                 if (showNoUpdateMessage) {
                     vscode.window.showInformationMessage('DevFlow Pro: Could not reach the update server.');
                 }
@@ -105,6 +135,9 @@ export class UpdateManager {
             const vsCodeVersion = vscode.version;
             const minRequired = latest.minVSCodeVersion.replace(/^\^/, '');
             if (semverLt(vsCodeVersion, minRequired)) {
+                this.logger.warn(`v${latest.version} requires VS Code ${latest.minVSCodeVersion} (current: ${vsCodeVersion})`);
+                this.statusBar.setState('error', 'VS Code too old');
+                this.treeProvider.updateStatus({ lastCheckResult: 'error' });
                 if (showNoUpdateMessage) {
                     vscode.window.showWarningMessage(
                         `DevFlow Pro v${latest.version} requires VS Code ${latest.minVSCodeVersion}. Please update VS Code first.`
@@ -114,9 +147,21 @@ export class UpdateManager {
             }
 
             if (semverGt(latest.version, this.currentVersion)) {
+                this.logger.info(`Update available: v${this.currentVersion} → v${latest.version}`);
+                this.statusBar.setState('update-available', `v${latest.version}`);
+                this.treeProvider.updateStatus({
+                    lastCheckResult: 'update-available',
+                    availableVersion: latest.version
+                });
                 await this.showUpdateNotification(latest);
                 return latest;
             } else {
+                this.logger.success(`Up to date (v${this.currentVersion})`);
+                this.statusBar.setState('up-to-date');
+                this.treeProvider.updateStatus({
+                    lastCheckResult: 'up-to-date',
+                    availableVersion: null
+                });
                 if (showNoUpdateMessage) {
                     vscode.window.showInformationMessage(
                         `DevFlow Pro is up to date (v${this.currentVersion}).`
@@ -125,6 +170,9 @@ export class UpdateManager {
                 return null;
             }
         } catch (error) {
+            this.logger.error(`Update check failed: ${error}`);
+            this.statusBar.setState('error');
+            this.treeProvider.updateStatus({ lastCheckResult: 'error' });
             console.error('DevFlow Pro: update check failed', error);
             if (showNoUpdateMessage) {
                 vscode.window.showErrorMessage(`DevFlow Pro: update check failed — ${error}`);
@@ -182,6 +230,7 @@ export class UpdateManager {
     private async performUpdate(updateInfo: UpdateInfo): Promise<void> {
         const downloader = new DownloadManager();
         const installer = new InstallManager();
+        this.logger.info(`Starting update to v${updateInfo.version}...`);
 
         const success = await vscode.window.withProgress(
             {
@@ -193,6 +242,8 @@ export class UpdateManager {
                 try {
                     await this.createBackup();
 
+                    this.statusBar.setState('downloading');
+                    this.logger.info('Downloading update...');
                     progress.report({ message: 'Downloading...', increment: 20 });
                     const vsixPath = await downloader.download(
                         updateInfo.downloadUrl,
@@ -200,14 +251,19 @@ export class UpdateManager {
                         updateInfo.sha256
                     );
 
+                    this.statusBar.setState('installing');
+                    this.logger.info('Installing update...');
                     progress.report({ message: 'Installing...', increment: 60 });
                     await installer.install(vsixPath);
 
+                    this.logger.info('Cleaning up...');
                     progress.report({ message: 'Cleaning up...', increment: 20 });
                     await downloader.cleanup(vsixPath);
 
                     return true;
                 } catch (error) {
+                    this.logger.error(`Update failed: ${error}`);
+                    this.statusBar.setState('error');
                     vscode.window.showErrorMessage(
                         `DevFlow Pro: update failed — ${error}. Use "Rollback" if needed.`
                     );
@@ -217,6 +273,8 @@ export class UpdateManager {
         );
 
         if (success) {
+            this.logger.success(`Update to v${updateInfo.version} installed! Reload to activate.`);
+            this.statusBar.setState('up-to-date');
             const reload = await vscode.window.showInformationMessage(
                 `DevFlow Pro v${updateInfo.version} installed! Reload window to activate.`,
                 'Reload Now',
@@ -261,9 +319,11 @@ export class UpdateManager {
         const backup = this.context.globalState.get<BackupInfo>(BACKUP_STATE_KEY);
 
         if (!backup) {
+            this.logger.warn('Rollback requested but no backup found');
             vscode.window.showWarningMessage('DevFlow Pro: no backup found to roll back to.');
             return;
         }
+        this.logger.info(`Rollback requested to v${backup.version}`);
 
         const confirm = await vscode.window.showWarningMessage(
             `Roll back DevFlow Pro to v${backup.version} (installed on ${backup.date})?`,
@@ -310,6 +370,13 @@ export class UpdateManager {
         this.updateChannel = config.get<'stable' | 'beta'>('updates.channel', 'stable');
         this.autoCheckEnabled = config.get<boolean>('updates.autoCheck', true);
         this.checkIntervalHours = config.get<number>('updates.checkInterval', 6);
+
+        this.logger.info(`Config changed: channel=${this.updateChannel}, autoCheck=${this.autoCheckEnabled}, interval=${this.checkIntervalHours}h`);
+        this.treeProvider.updateStatus({
+            channel: this.updateChannel,
+            autoCheck: this.autoCheckEnabled,
+            checkInterval: this.checkIntervalHours
+        });
 
         this.schedulePeriodicChecks();
     }
