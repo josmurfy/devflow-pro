@@ -7,7 +7,6 @@
 import * as vscode from 'vscode';
 import { VersionChecker } from './versionChecker';
 import { DownloadManager } from './downloadManager';
-import { InstallManager } from './installManager';
 import { ChangelogParser } from './changelogParser';
 import { UpdateInfo, BackupInfo } from './models';
 import { OutputLogger } from '../ui/outputLogger';
@@ -229,7 +228,6 @@ export class UpdateManager {
      */
     private async performUpdate(updateInfo: UpdateInfo): Promise<void> {
         const downloader = new DownloadManager();
-        const installer = new InstallManager();
         this.logger.info(`Starting update to v${updateInfo.version}...`);
 
         const success = await vscode.window.withProgress(
@@ -244,7 +242,7 @@ export class UpdateManager {
 
                     this.statusBar.setState('downloading');
                     this.logger.info('Downloading update...');
-                    progress.report({ message: 'Downloading...', increment: 20 });
+                    progress.report({ message: 'Downloading...', increment: 30 });
                     const vsixPath = await downloader.download(
                         updateInfo.downloadUrl,
                         updateInfo.version,
@@ -252,12 +250,18 @@ export class UpdateManager {
                     );
 
                     this.statusBar.setState('installing');
-                    this.logger.info('Installing update...');
+                    this.logger.info('Installing update via VS Code API...');
                     progress.report({ message: 'Installing...', increment: 60 });
-                    await installer.install(vsixPath);
+
+                    // Use VS Code's internal extension install command — works in
+                    // all environments (remote SSH, WSL, local) without needing the CLI.
+                    await vscode.commands.executeCommand(
+                        'workbench.extensions.installExtension',
+                        vscode.Uri.file(vsixPath)
+                    );
 
                     this.logger.info('Cleaning up...');
-                    progress.report({ message: 'Cleaning up...', increment: 20 });
+                    progress.report({ message: 'Cleaning up...', increment: 10 });
                     await downloader.cleanup(vsixPath);
 
                     return true;
