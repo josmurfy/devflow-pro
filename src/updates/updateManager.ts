@@ -230,7 +230,7 @@ export class UpdateManager {
         const downloader = new DownloadManager();
         this.logger.info(`Starting update to v${updateInfo.version}...`);
 
-        const success = await vscode.window.withProgress(
+        await vscode.window.withProgress(
             {
                 location: vscode.ProgressLocation.Notification,
                 title: `DevFlow Pro: updating to v${updateInfo.version}`,
@@ -242,7 +242,7 @@ export class UpdateManager {
 
                     this.statusBar.setState('downloading');
                     this.logger.info('Downloading update...');
-                    progress.report({ message: 'Downloading...', increment: 30 });
+                    progress.report({ message: 'Downloading...', increment: 50 });
                     const vsixPath = await downloader.download(
                         updateInfo.downloadUrl,
                         updateInfo.version,
@@ -250,45 +250,34 @@ export class UpdateManager {
                     );
 
                     this.statusBar.setState('installing');
-                    this.logger.info('Installing update via VS Code API...');
-                    progress.report({ message: 'Installing...', increment: 60 });
+                    progress.report({ message: 'Ready to install...', increment: 50 });
 
-                    // Use VS Code's internal extension install command — works in
-                    // all environments (remote SSH, WSL, local) without needing the CLI.
-                    await vscode.commands.executeCommand(
-                        'workbench.extensions.installExtension',
-                        vscode.Uri.file(vsixPath)
-                    );
+                    // Open the .vsix file — VS Code handles it natively in all
+                    // environments (local, Remote SSH, WSL) via the client UI.
+                    const vsixUri = vscode.Uri.file(vsixPath);
+                    await vscode.env.openExternal(vsixUri);
 
-                    this.logger.info('Cleaning up...');
-                    progress.report({ message: 'Cleaning up...', increment: 10 });
-                    await downloader.cleanup(vsixPath);
+                    this.logger.success(`v${updateInfo.version} ready. Accept the install prompt.`);
+                    this.statusBar.setState('up-to-date');
 
-                    return true;
+                    vscode.window.showInformationMessage(
+                        `DevFlow Pro v${updateInfo.version} is ready — accept the install prompt, then reload VS Code.`,
+                        'Reload Now'
+                    ).then(choice => {
+                        if (choice === 'Reload Now') {
+                            vscode.commands.executeCommand('workbench.action.reloadWindow');
+                        }
+                    });
+
                 } catch (error) {
                     this.logger.error(`Update failed: ${error}`);
                     this.statusBar.setState('error');
                     vscode.window.showErrorMessage(
                         `DevFlow Pro: update failed — ${error}. Use "Rollback" if needed.`
                     );
-                    return false;
                 }
             }
         );
-
-        if (success) {
-            this.logger.success(`Update to v${updateInfo.version} installed! Reload to activate.`);
-            this.statusBar.setState('up-to-date');
-            const reload = await vscode.window.showInformationMessage(
-                `DevFlow Pro v${updateInfo.version} installed! Reload window to activate.`,
-                'Reload Now',
-                'Later'
-            );
-
-            if (reload === 'Reload Now') {
-                await vscode.commands.executeCommand('workbench.action.reloadWindow');
-            }
-        }
     }
 
     /**
