@@ -288,8 +288,9 @@ ${screenshotHtml}
     }
 }
 
-function esc(s: string): string {
-    return s
+function esc(s: any): string {
+    if (s == null) { return ''; }
+    return String(s)
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
