@@ -2,7 +2,7 @@
   "name": "devflow-pro",
   "displayName": "DevFlow Pro",
   "description": "Debug Logger Manager for OpenCart 4.x — manage bug tickets, Copilot integration",
-  "version": "2.0.11",
+  "version": "2.0.12",
   "publisher": "josmurfy",
   "icon": "resources/icon.jpg",
   "repository": {
