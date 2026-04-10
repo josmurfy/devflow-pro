@@ -347,10 +347,10 @@ export class TicketDetailView {
     </div>
 </div>
 
-${ticket.url ? `
+${ticket.route || ticket.url ? `
 <div class="section">
-    <div class="section-title">Internal Path</div>
-    <div class="url-box">${esc(ticket.url)}</div>
+    <div class="section-title">Route</div>
+    <div class="url-box">${ticket.route ? esc(ticket.route) : esc(ticket.url)}</div>
 </div>` : ''}
 
 <div class="section">
@@ -372,6 +372,12 @@ ${ticket.network_log ? `
 <div class="section">
     <div class="section-title">Network Log</div>
     <pre>${esc(ticket.network_log)}</pre>
+</div>` : ''}
+
+${ticket.loaded_files ? `
+<div class="section">
+    <div class="section-title">PHP Files Loaded</div>
+    <pre>${esc(ticket.loaded_files)}</pre>
 </div>` : ''}
 
 ${ticket.screenshot && ticket.screenshot.startsWith('data:image/') ? `

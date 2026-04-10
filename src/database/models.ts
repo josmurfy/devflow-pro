@@ -15,8 +15,10 @@ export interface DatabaseConfig {
 export interface DebugReport {
     id: number;
     url: string;
+    route: string | null;          // OpenCart route (e.g. shopmanager/product)
     console_log: string | null;
     network_log: string | null;
+    loaded_files: string | null;   // PHP files loaded during the request
     screenshot: string | null;
     comment: string;
     resolution: string | null;

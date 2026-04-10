@@ -38,13 +38,17 @@ export class CopilotProvider {
     }
 
     private buildPrompt(ticket: DebugReport): string {
-        const internalPath = this.extractInternalPath(ticket);
+        const route = ticket.route || this.extractRouteFromUrl(ticket);
+        const prefix = ticket.source === 'admin' ? 'administrator' : 'catalog';
+        const controllerPath = route ? `${prefix}/controller/${route}.php` : '(unknown)';
 
         const lines: string[] = [
             `# Debug Ticket #${ticket.id} — ${ticket.severity.toUpperCase()}`,
             '',
-            '## Internal Path',
-            internalPath,
+            '## Route',
+            `- **Route**: ${route || '(unknown)'}`,
+            `- **Controller**: ${controllerPath}`,
+            `- **Source**: ${ticket.source}`,
             '',
             '## User Comment',
             ticket.comment || '(no comment)',
@@ -56,6 +60,16 @@ export class CopilotProvider {
                 '## Console Log',
                 '```javascript',
                 ticket.console_log,
+                '```',
+                ''
+            );
+        }
+
+        if (ticket.loaded_files) {
+            lines.push(
+                '## PHP Files Loaded',
+                '```',
+                ticket.loaded_files,
                 '```',
                 ''
             );
@@ -78,14 +92,12 @@ export class CopilotProvider {
         return lines.join('\n');
     }
 
-    private extractInternalPath(ticket: DebugReport): string {
+    private extractRouteFromUrl(ticket: DebugReport): string | null {
         const routeMatch = ticket.url?.match(/route=([^&]+)/);
         if (routeMatch) {
-            const route = routeMatch[1].replace(/\|/g, '/');
-            const prefix = ticket.source === 'admin' ? 'administrator' : 'catalog';
-            return `${prefix}/controller/${route}.php`;
+            return routeMatch[1].replace(/\|/g, '/');
         }
-        return ticket.url || '(unknown)';
+        return null;
     }
 
     /**
@@ -94,14 +106,23 @@ export class CopilotProvider {
     detectRelatedFiles(ticket: DebugReport): string[] {
         const files: string[] = [];
 
-        // Parse OpenCart route from URL
-        const routeMatch = ticket.url.match(/route=([^&]+)/);
-        if (routeMatch) {
-            const route = routeMatch[1].replace(/\|/g, '/');
+        // Use route field directly, fallback to URL parsing
+        const route = ticket.route || (() => {
+            const m = ticket.url?.match(/route=([^&]+)/);
+            return m ? m[1].replace(/\|/g, '/') : null;
+        })();
+
+        if (route) {
             const prefix = ticket.source === 'admin' ? 'administrator' : 'catalog';
             files.push(`${prefix}/controller/${route}.php`);
             files.push(`${prefix}/model/${route}.php`);
             files.push(`${prefix}/view/template/${route}.twig`);
+        }
+
+        // Add loaded_files if present
+        if (ticket.loaded_files) {
+            const phpFiles = ticket.loaded_files.match(/[\w/.-]+\.php/gi);
+            if (phpFiles) { files.push(...phpFiles); }
         }
 
         // Parse file references from console_log

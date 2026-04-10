@@ -206,9 +206,8 @@ export class ReportsView {
     <span class="meta-right">${esc(String(t.date_added || ''))}</span>
   </div>
 
-  ${t.url ? `<div class="report-url">
-    ${t.route ? `<span class="route-badge">${esc(t.route)}</span>` : ''}
-    <span class="url-text">${esc(t.url)}</span>
+  ${(t.route || t.url) ? `<div class="report-url">
+    <span class="url-text">${esc(t.route || t.url)}</span>
   </div>` : ''}
 
   <div class="inline-edit comment-edit" data-rid="${t.id}" data-field="comment" onclick="startEdit(this)">
