@@ -26,8 +26,9 @@ let copilotProvider: CopilotProvider | null = null;
 let settingsView: SettingsView | null = null;
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
+
     // ─────────────────────────────────────────────────────────
-    // UI COMPONENTS (existing)
+    // STEP 1: UI COMPONENTS — synchronous, always succeed
     // ─────────────────────────────────────────────────────────
 
     outputLogger = OutputLogger.getInstance();
@@ -43,27 +44,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     });
     context.subscriptions.push(devflowTreeView);
 
-    // ─────────────────────────────────────────────────────────
-    // AUTO-UPDATE SYSTEM (existing)
-    // ─────────────────────────────────────────────────────────
-
-    updateManager = UpdateManager.getInstance(context, outputLogger, statusBar, treeProvider);
-    await updateManager.initialize();
-
-    const config = vscode.workspace.getConfiguration('devflow');
-    const manifest = context.extension.packageJSON as { version: string };
-    treeProvider.updateStatus({
-        currentVersion: manifest.version,
-        channel: config.get<'stable' | 'beta'>('updates.channel', 'stable'),
-        autoCheck: config.get<boolean>('updates.autoCheck', true),
-        checkInterval: config.get<number>('updates.checkInterval', 6),
-        extensionActive: true
-    });
-
-    // ─────────────────────────────────────────────────────────
-    // DEBUG LOGGER SYSTEM
-    // ─────────────────────────────────────────────────────────
-
     dbConnection = new DatabaseConnection(context);
     ticketTree = new TicketTreeProvider();
 
@@ -73,95 +53,17 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     });
     context.subscriptions.push(ticketTreeView);
 
-    // Helper: called when DB connects successfully
-    const onDbConnected = async () => {
-        const pool = dbConnection!.getPool();
-        const prefix = dbConnection!.getPrefix();
-        const queries = new DebugLoggerQueries(pool, prefix);
-
-        // Ensure history table exists
-        try { await queries.ensureHistoryTable(); } catch { /* ok */ }
-
-        ticketTree!.setQueries(queries);
-        copilotProvider = new CopilotProvider(queries);
-        ticketDetail = new TicketDetailView(queries, copilotProvider, () => ticketTree!.refresh());
-
-        outputLogger!.success('Connected to OpenCart database');
-        outputLogger!.info(`Table prefix: ${prefix}`);
-
-        const stats = await queries.getStats();
-        outputLogger!.info(`Tickets: ${stats.open} open (${stats.bugs} bugs, ${stats.warnings} warnings, ${stats.infos} info) — ${stats.closed} closed`);
-    };
-
-    settingsView = new SettingsView(dbConnection, onDbConnected);
-
-    // Auto-connect if config exists
-    try {
-        const existingConfig = await dbConnection.loadConfig();
-        if (existingConfig) {
-            outputLogger.info('Found saved DB config, connecting...');
-            await dbConnection.connect(existingConfig);
-            await onDbConnected();
-        } else {
-            outputLogger.info('No database configured yet. Use "Debug Logger: Configure Database" to get started.');
-        }
-    } catch (err: any) {
-        outputLogger.warn(`Auto-connect failed: ${err.message}`);
-    }
-
     // ─────────────────────────────────────────────────────────
-    // COMMANDS — Update system
-    // ─────────────────────────────────────────────────────────
-
-    context.subscriptions.push(
-        vscode.commands.registerCommand('devflow.checkForUpdates', async () => {
-            await updateManager!.checkForUpdates(true);
-        })
-    );
-
-    context.subscriptions.push(
-        vscode.commands.registerCommand('devflow.rollbackVersion', async () => {
-            await updateManager!.rollback();
-        })
-    );
-
-    context.subscriptions.push(
-        vscode.commands.registerCommand('devflow.switchUpdateChannel', async () => {
-            const cfg = vscode.workspace.getConfiguration('devflow');
-            const current = cfg.get<string>('updates.channel', 'stable');
-
-            const choice = await vscode.window.showQuickPick(
-                [
-                    { label: 'stable', description: 'Production-ready releases (recommended)', picked: current === 'stable' },
-                    { label: 'beta', description: 'Early access — may contain bugs', picked: current === 'beta' }
-                ],
-                { placeHolder: `Current channel: ${current}` }
-            );
-
-            if (choice && choice.label !== current) {
-                await cfg.update('updates.channel', choice.label, vscode.ConfigurationTarget.Global);
-                vscode.window.showInformationMessage(
-                    `DevFlow Pro: switched to ${choice.label} update channel.`
-                );
-                outputLogger!.info(`Channel switched to: ${choice.label}`);
-                treeProvider!.updateStatus({ channel: choice.label as 'stable' | 'beta' });
-            }
-        })
-    );
-
-    context.subscriptions.push(
-        vscode.commands.registerCommand('devflow.showOutput', () => {
-            outputLogger!.show();
-        })
-    );
-
-    // ─────────────────────────────────────────────────────────
-    // COMMANDS — Debug Logger
+    // STEP 2: COMMANDS DEBUG LOGGER — toujours disponibles
     // ─────────────────────────────────────────────────────────
 
     context.subscriptions.push(
         vscode.commands.registerCommand('debugLogger.configure', () => {
-            settingsView!.show();
+            if (!settingsView) {
+                vscode.window.showWarningMessage('DevFlow Pro: not fully initialized yet.');
+                return;
+            }
+            settingsView.show();
         })
     );
 
@@ -175,7 +77,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     context.subscriptions.push(
         vscode.commands.registerCommand('debugLogger.showTicket', async (ticketId: number) => {
             if (!ticketDetail) {
-                vscode.window.showWarningMessage('Connect to database first: Debug Logger → Configure Database');
+                vscode.window.showWarningMessage('Connectez d\'abord la base de données : Debug Logger → Configure Database');
                 return;
             }
             await ticketDetail.show(ticketId);
@@ -185,7 +87,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     context.subscriptions.push(
         vscode.commands.registerCommand('debugLogger.sendToCopilot', async (item: any) => {
             if (!copilotProvider) {
-                vscode.window.showWarningMessage('Connect to database first.');
+                vscode.window.showWarningMessage('Connectez d\'abord la base de données.');
                 return;
             }
             const ticketId = item?.ticket?.id;
@@ -197,13 +99,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     context.subscriptions.push(
         vscode.commands.registerCommand('debugLogger.closeTicket', async (item: any) => {
-            if (!ticketDetail) { return; }
+            if (!ticketDetail || !dbConnection?.isConnected()) { return; }
             const ticketId = item?.ticket?.id;
             if (ticketId) {
-                const queries = new DebugLoggerQueries(dbConnection!.getPool(), dbConnection!.getPrefix());
+                const queries = new DebugLoggerQueries(dbConnection.getPool(), dbConnection.getPrefix());
                 await queries.closeTicket(ticketId);
                 ticketTree!.refresh();
-                vscode.window.showInformationMessage(`Ticket #${ticketId} closed.`);
+                vscode.window.showInformationMessage(`Ticket #${ticketId} fermé.`);
             }
         })
     );
@@ -215,7 +117,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                 const queries = new DebugLoggerQueries(dbConnection.getPool(), dbConnection.getPrefix());
                 await queries.reopenTicket(ticketId);
                 ticketTree!.refresh();
-                vscode.window.showInformationMessage(`Ticket #${ticketId} reopened.`);
+                vscode.window.showInformationMessage(`Ticket #${ticketId} réouvert.`);
             }
         })
     );
@@ -225,13 +127,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             const ticketId = item?.ticket?.id;
             if (ticketId && dbConnection?.isConnected()) {
                 const confirm = await vscode.window.showWarningMessage(
-                    `Delete ticket #${ticketId}?`, { modal: true }, 'Delete', 'Cancel'
+                    `Supprimer le ticket #${ticketId}?`, { modal: true }, 'Supprimer', 'Annuler'
                 );
-                if (confirm === 'Delete') {
+                if (confirm === 'Supprimer') {
                     const queries = new DebugLoggerQueries(dbConnection.getPool(), dbConnection.getPrefix());
                     await queries.deleteTicket(ticketId);
                     ticketTree!.refresh();
-                    vscode.window.showInformationMessage(`Ticket #${ticketId} deleted.`);
+                    vscode.window.showInformationMessage(`Ticket #${ticketId} supprimé.`);
                 }
             }
         })
@@ -239,15 +141,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     context.subscriptions.push(
         vscode.commands.registerCommand('debugLogger.openRelatedFiles', async (item: any) => {
-            if (!copilotProvider) { return; }
+            if (!copilotProvider || !dbConnection?.isConnected()) { return; }
             const ticketId = item?.ticket?.id;
             if (ticketId) {
-                const queries = new DebugLoggerQueries(dbConnection!.getPool(), dbConnection!.getPrefix());
+                const queries = new DebugLoggerQueries(dbConnection.getPool(), dbConnection.getPrefix());
                 const ticket = await queries.getTicketById(ticketId);
                 if (ticket) {
                     const files = copilotProvider.detectRelatedFiles(ticket);
                     if (files.length === 0) {
-                        vscode.window.showInformationMessage('No related files detected.');
+                        vscode.window.showInformationMessage('Aucun fichier lié détecté.');
                         return;
                     }
                     for (const f of files) {
@@ -264,7 +166,107 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         })
     );
 
-    outputLogger.success(`DevFlow Pro v${manifest.version} activated successfully`);
+    // ─────────────────────────────────────────────────────────
+    // STEP 3: COMMANDS DEVFLOW (mise à jour) — à la fin
+    // ─────────────────────────────────────────────────────────
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('devflow.checkForUpdates', async () => {
+            if (!updateManager) {
+                vscode.window.showWarningMessage('DevFlow Pro: update system not ready yet.');
+                return;
+            }
+            await updateManager.checkForUpdates(true);
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('devflow.rollbackVersion', async () => {
+            await updateManager?.rollback();
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('devflow.switchUpdateChannel', async () => {
+            const cfg = vscode.workspace.getConfiguration('devflow');
+            const current = cfg.get<string>('updates.channel', 'stable');
+            const choice = await vscode.window.showQuickPick(
+                [
+                    { label: 'stable', description: 'Version stable (recommandé)', picked: current === 'stable' },
+                    { label: 'beta', description: 'Accès anticipé — peut contenir des bugs', picked: current === 'beta' }
+                ],
+                { placeHolder: `Canal actuel: ${current}` }
+            );
+            if (choice && choice.label !== current) {
+                await cfg.update('updates.channel', choice.label, vscode.ConfigurationTarget.Global);
+                vscode.window.showInformationMessage(`DevFlow Pro: canal changé vers ${choice.label}.`);
+                outputLogger!.info(`Canal: ${choice.label}`);
+                treeProvider!.updateStatus({ channel: choice.label as 'stable' | 'beta' });
+            }
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('devflow.showOutput', () => {
+            outputLogger!.show();
+        })
+    );
+
+    // ─────────────────────────────────────────────────────────
+    // STEP 4: ASYNC INIT — en arrière-plan, ne bloque rien
+    // ─────────────────────────────────────────────────────────
+
+    const manifest = context.extension.packageJSON as { version: string };
+    outputLogger.success(`DevFlow Pro v${manifest.version} — commandes prêtes`);
+
+    // Init async sans bloquer l'activation
+    (async () => {
+        try {
+            // Update system
+            updateManager = UpdateManager.getInstance(context, outputLogger!, statusBar!, treeProvider!);
+            const config = vscode.workspace.getConfiguration('devflow');
+            treeProvider!.updateStatus({
+                currentVersion: manifest.version,
+                channel: config.get<'stable' | 'beta'>('updates.channel', 'stable'),
+                autoCheck: config.get<boolean>('updates.autoCheck', true),
+                checkInterval: config.get<number>('updates.checkInterval', 6),
+                extensionActive: true
+            });
+            await updateManager.initialize();
+        } catch (err: any) {
+            outputLogger!.warn(`Update system init failed: ${err.message}`);
+        }
+
+        try {
+            // DB auto-connect
+            const onDbConnected = async () => {
+                const pool = dbConnection!.getPool();
+                const prefix = dbConnection!.getPrefix();
+                const queries = new DebugLoggerQueries(pool, prefix);
+                try { await queries.ensureHistoryTable(); } catch { /* ok */ }
+                ticketTree!.setQueries(queries);
+                copilotProvider = new CopilotProvider(queries);
+                ticketDetail = new TicketDetailView(queries, copilotProvider, () => ticketTree!.refresh());
+                outputLogger!.success('Connecté à la base OpenCart');
+                outputLogger!.info(`Préfixe: ${prefix}`);
+                const stats = await queries.getStats();
+                outputLogger!.info(`Tickets: ${stats.open} ouverts (${stats.bugs} bugs, ${stats.warnings} warnings, ${stats.infos} info) — ${stats.closed} fermés`);
+            };
+
+            settingsView = new SettingsView(dbConnection!, onDbConnected);
+
+            const existingConfig = await dbConnection!.loadConfig();
+            if (existingConfig) {
+                outputLogger!.info('Config DB trouvée, connexion...');
+                await dbConnection!.connect(existingConfig);
+                await onDbConnected();
+            } else {
+                outputLogger!.info('Aucune DB configurée. Utilisez "Debug Logger: Configure Database".');
+            }
+        } catch (err: any) {
+            outputLogger!.warn(`Auto-connect DB échoué: ${err.message}`);
+        }
+    })();
 }
 
 export function deactivate(): void {
