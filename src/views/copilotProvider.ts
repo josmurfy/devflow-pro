@@ -38,46 +38,25 @@ export class CopilotProvider {
     }
 
     private buildPrompt(ticket: DebugReport): string {
+        const internalPath = this.extractInternalPath(ticket);
+
         const lines: string[] = [
             `# Debug Ticket #${ticket.id} — ${ticket.severity.toUpperCase()}`,
             '',
-            '## Context',
-            `- **URL**: ${ticket.url}`,
-            `- **Source**: ${ticket.source}`,
-            `- **Date**: ${ticket.date_added}`,
-            `- **Reporter**: ${ticket.admin_user}`,
-            ticket.assigned_username ? `- **Assigned to**: ${ticket.assigned_username}` : '',
-            ticket.tags ? `- **Tags**: ${ticket.tags}` : '',
+            '## Internal Path',
+            internalPath,
             '',
-            '## User Report',
+            '## User Comment',
             ticket.comment || '(no comment)',
             ''
         ];
 
         if (ticket.console_log) {
             lines.push(
-                '## Console Errors',
+                '## Console Log',
                 '```javascript',
                 ticket.console_log,
                 '```',
-                ''
-            );
-        }
-
-        if (ticket.network_log) {
-            lines.push(
-                '## Network Errors',
-                '```json',
-                ticket.network_log,
-                '```',
-                ''
-            );
-        }
-
-        if (ticket.resolution) {
-            lines.push(
-                '## Resolution Notes',
-                ticket.resolution,
                 ''
             );
         }
@@ -96,7 +75,17 @@ export class CopilotProvider {
             'Catalog routes map to: catalog/controller/{route}.php'
         );
 
-        return lines.filter(l => l !== undefined).join('\n');
+        return lines.join('\n');
+    }
+
+    private extractInternalPath(ticket: DebugReport): string {
+        const routeMatch = ticket.url?.match(/route=([^&]+)/);
+        if (routeMatch) {
+            const route = routeMatch[1].replace(/\|/g, '/');
+            const prefix = ticket.source === 'admin' ? 'administrator' : 'catalog';
+            return `${prefix}/controller/${route}.php`;
+        }
+        return ticket.url || '(unknown)';
     }
 
     /**

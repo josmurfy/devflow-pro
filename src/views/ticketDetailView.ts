@@ -346,10 +346,10 @@ ${ticket.network_log ? `
     <pre>${esc(ticket.network_log)}</pre>
 </div>` : ''}
 
-${ticket.screenshot ? `
+${ticket.screenshot && ticket.screenshot.startsWith('data:image/') ? `
 <div class="section">
     <div class="section-title">📸 Screenshot</div>
-    <img src="data:image/png;base64,${ticket.screenshot}" class="screenshot" />
+    <img src="${ticket.screenshot}" class="screenshot" />
 </div>` : ''}
 
 <div class="section">
