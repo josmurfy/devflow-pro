@@ -14,6 +14,7 @@ import { TicketTreeProvider } from './views/ticketTreeProvider';
 import { TicketDetailView } from './views/ticketDetailView';
 import { CopilotProvider } from './views/copilotProvider';
 import { SettingsView } from './views/settingsView';
+import { ReportsView } from './views/reportsView';
 
 let updateManager: UpdateManager | null = null;
 let outputLogger: OutputLogger | null = null;
@@ -24,6 +25,7 @@ let ticketTree: TicketTreeProvider | null = null;
 let ticketDetail: TicketDetailView | null = null;
 let copilotProvider: CopilotProvider | null = null;
 let settingsView: SettingsView | null = null;
+let reportsView: ReportsView | null = null;
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
 
@@ -46,6 +48,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     dbConnection = new DatabaseConnection(context);
     ticketTree = new TicketTreeProvider();
+    reportsView = new ReportsView();
 
     const ticketTreeView = vscode.window.createTreeView('debugLogger.ticketList', {
         treeDataProvider: ticketTree,
@@ -56,6 +59,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // ─────────────────────────────────────────────────────────
     // STEP 2: COMMANDS DEBUG LOGGER — toujours disponibles
     // ─────────────────────────────────────────────────────────
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('debugLogger.openReports', () => {
+            reportsView!.show();
+        })
+    );
 
     context.subscriptions.push(
         vscode.commands.registerCommand('debugLogger.configure', () => {
@@ -247,6 +256,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                 ticketTree!.setQueries(queries);
                 copilotProvider = new CopilotProvider(queries);
                 ticketDetail = new TicketDetailView(queries, copilotProvider, () => ticketTree!.refresh());
+                reportsView!.setQueries(queries);
                 outputLogger!.success('Connecté à la base OpenCart');
                 outputLogger!.info(`Préfixe: ${prefix}`);
                 const stats = await queries.getStats();
@@ -277,4 +287,5 @@ export function deactivate(): void {
     if (ticketDetail) { ticketDetail.dispose(); ticketDetail = null; }
     if (dbConnection) { dbConnection.disconnect(); dbConnection = null; }
     if (outputLogger) { outputLogger.dispose(); outputLogger = null; }
+    if (reportsView) { reportsView.dispose(); reportsView = null; }
 }

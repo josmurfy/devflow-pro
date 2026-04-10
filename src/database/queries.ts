@@ -237,6 +237,22 @@ export class DebugLoggerQueries {
         };
     }
 
+    async getAllTags(): Promise<string[]> {
+        const [rows] = await this.pool.execute(
+            `SELECT DISTINCT tag_name FROM ${this.prefix}debug_logger_tags ORDER BY tag_name`
+        );
+        return (rows as any[]).map(r => r.tag_name);
+    }
+
+    async updateField(id: number, field: string, value: string): Promise<void> {
+        const allowed = ['severity', 'status', 'source'];
+        if (!allowed.includes(field)) { return; }
+        await this.pool.execute(
+            `UPDATE ${this.prefix}debug_report SET ${field} = ? WHERE id = ?`,
+            [value, id]
+        );
+    }
+
     private getCurrentUser(): string {
         return process.env.USER || process.env.USERNAME || 'vscode-user';
     }
