@@ -150,133 +150,160 @@ export class TicketDetailView {
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
         font-family: var(--vscode-font-family);
+        font-size: 15px;
         color: var(--vscode-foreground);
         background: var(--vscode-editor-background);
-        padding: 0;
-        line-height: 1.6;
+        line-height: 1.65;
     }
 
     /* ── Header Banner ── */
     .ticket-header {
-        background: linear-gradient(135deg, ${color}22 0%, ${color}08 100%);
-        border-bottom: 3px solid ${color};
-        padding: 20px 24px 16px;
+        background: linear-gradient(140deg, ${color}30 0%, ${color}0a 60%, transparent 100%);
+        border-left: 6px solid ${color};
+        padding: 22px 28px 18px;
+        position: relative;
     }
-    .ticket-header-top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-    .ticket-id { font-size: 28px; font-weight: 800; letter-spacing: -1px; color: var(--vscode-foreground); }
+    .ticket-header::after {
+        content: '';
+        position: absolute; bottom: 0; left: 0; right: 0;
+        height: 1px; background: ${color}40;
+    }
+    .ticket-header-top { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .ticket-id {
+        font-size: 38px; font-weight: 900; letter-spacing: -2px;
+        color: ${color}; line-height: 1;
+    }
     .badge {
-        display: inline-flex; align-items: center; gap: 5px;
-        padding: 4px 14px; border-radius: 20px;
-        font-size: 13px; font-weight: 700; color: #fff;
-        background: ${color}; text-transform: uppercase; letter-spacing: 0.5px;
+        display: inline-flex; align-items: center;
+        padding: 5px 16px; border-radius: 4px;
+        font-size: 12px; font-weight: 800; color: #fff;
+        background: ${color}; text-transform: uppercase; letter-spacing: 1.5px;
     }
     .status-chip {
-        display: inline-flex; align-items: center; gap: 5px;
-        padding: 4px 12px; border-radius: 20px;
-        font-size: 12px; font-weight: 600;
-        background: ${ticket.status === 0 ? 'rgba(34,197,94,0.2)' : 'rgba(100,116,139,0.2)'};
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 5px 14px; border-radius: 4px;
+        font-size: 12px; font-weight: 700; letter-spacing: 0.5px;
+        background: ${ticket.status === 0 ? 'rgba(34,197,94,0.15)' : 'rgba(100,116,139,0.15)'};
         color: ${ticket.status === 0 ? '#4ade80' : '#94a3b8'};
-        border: 1px solid ${ticket.status === 0 ? 'rgba(34,197,94,0.4)' : 'rgba(100,116,139,0.4)'};
+        border: 1px solid ${ticket.status === 0 ? 'rgba(34,197,94,0.5)' : 'rgba(100,116,139,0.4)'};
     }
-    .ticket-meta { font-size: 13px; color: var(--vscode-descriptionForeground); margin-top: 8px; }
+    .ticket-meta {
+        font-size: 13px; color: var(--vscode-descriptionForeground);
+        margin-top: 10px; display: flex; flex-wrap: wrap; gap: 16px;
+    }
+    .meta-item { display: flex; align-items: center; gap: 5px; }
+    .meta-label { font-weight: 700; color: var(--vscode-foreground); opacity: 0.6; font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; }
 
     /* ── Actions toolbar ── */
     .toolbar {
         display: flex; flex-wrap: wrap; gap: 8px;
-        padding: 14px 24px;
+        padding: 14px 28px;
         background: var(--vscode-sideBar-background);
-        border-bottom: 1px solid var(--vscode-widget-border);
+        border-bottom: 2px solid var(--vscode-widget-border);
     }
     .btn {
-        display: inline-flex; align-items: center; gap: 6px;
-        padding: 8px 16px; border: none; border-radius: 8px;
-        cursor: pointer; font-size: 13px; font-weight: 600;
-        font-family: inherit; transition: opacity 0.15s, transform 0.1s;
-        white-space: nowrap;
+        display: inline-flex; align-items: center; gap: 7px;
+        padding: 9px 20px; border: none; border-radius: 5px;
+        cursor: pointer; font-size: 14px; font-weight: 700;
+        font-family: inherit; transition: filter 0.15s, transform 0.1s;
+        white-space: nowrap; letter-spacing: 0.2px;
     }
-    .btn:hover { opacity: 0.85; }
-    .btn:active { transform: scale(0.97); }
-    .btn-copilot { background: linear-gradient(135deg, #8b5cf6, #6366f1); color: #fff; font-size: 14px; padding: 9px 18px; }
+    .btn:hover { filter: brightness(1.15); }
+    .btn:active { transform: scale(0.96); }
+    .btn-copilot { background: linear-gradient(135deg, #8b5cf6, #6366f1); color: #fff; font-size: 15px; padding: 10px 22px; }
     .btn-primary { background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; }
     .btn-success { background: linear-gradient(135deg, #16a34a, #15803d); color: #fff; }
     .btn-warning { background: linear-gradient(135deg, #d97706, #b45309); color: #fff; }
     .btn-danger { background: linear-gradient(135deg, #dc2626, #b91c1c); color: #fff; }
     .btn-ghost {
         background: transparent; color: var(--vscode-foreground);
-        border: 1px solid var(--vscode-widget-border);
+        border: 1.5px solid var(--vscode-widget-border);
     }
     .btn-ghost:hover { background: var(--vscode-list-hoverBackground); }
 
     /* ── Body ── */
-    .body { padding: 20px 24px; }
+    .body { padding: 24px 28px; max-width: 900px; }
 
     /* ── Sections ── */
-    .section { margin-bottom: 24px; }
+    .section { margin-bottom: 28px; }
     .section-title {
-        font-size: 11px; font-weight: 700; letter-spacing: 1px;
-        text-transform: uppercase; color: var(--vscode-descriptionForeground);
-        margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+        font-size: 11px; font-weight: 800; letter-spacing: 1.5px;
+        text-transform: uppercase; color: ${color};
+        margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
     }
     .section-title::after {
-        content: ''; flex: 1; height: 1px;
-        background: var(--vscode-widget-border);
+        content: ''; flex: 1; height: 2px;
+        background: linear-gradient(to right, ${color}50, transparent);
     }
 
     .url-box {
         background: var(--vscode-textCodeBlock-background);
-        border: 1px solid var(--vscode-widget-border);
-        border-radius: 8px; padding: 10px 14px;
+        border-left: 3px solid ${color}80;
+        border-radius: 0 6px 6px 0; padding: 12px 16px;
         font-family: var(--vscode-editor-font-family, monospace);
-        font-size: 13px; word-break: break-all; line-height: 1.5;
+        font-size: 13px; word-break: break-all; line-height: 1.6;
+        color: var(--vscode-foreground);
     }
     pre {
-        background: var(--vscode-textCodeBlock-background);
-        border: 1px solid var(--vscode-widget-border);
-        border-radius: 8px; padding: 12px 14px;
-        font-size: 13px; white-space: pre-wrap; word-break: break-all;
-        max-height: 250px; overflow-y: auto; line-height: 1.5;
+        background: #0d1117;
+        border: 1px solid #30363d;
+        border-left: 4px solid ${color};
+        border-radius: 0 8px 8px 0; padding: 14px 16px;
+        font-size: 13px; font-family: var(--vscode-editor-font-family, monospace);
+        white-space: pre-wrap; word-break: break-all;
+        max-height: 280px; overflow-y: auto; line-height: 1.6;
+        color: #e6edf3;
     }
 
     textarea {
-        width: 100%; min-height: 90px;
+        width: 100%; min-height: 100px;
         background: var(--vscode-input-background);
         color: var(--vscode-input-foreground);
         border: 2px solid var(--vscode-input-border);
-        border-radius: 8px; padding: 10px 12px;
-        font-family: inherit; font-size: 14px; resize: vertical;
-        transition: border-color 0.15s; outline: none;
+        border-radius: 6px; padding: 12px 14px;
+        font-family: inherit; font-size: 15px; resize: vertical;
+        transition: border-color 0.15s, box-shadow 0.15s; outline: none;
+        line-height: 1.6;
     }
-    textarea:focus { border-color: #7c3aed; }
-    .save-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
-    .save-indicator { font-size: 12px; color: #4ade80; display: none; }
+    textarea:focus { border-color: ${color}; box-shadow: 0 0 0 3px ${color}20; }
+    .save-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+    .save-indicator { font-size: 13px; font-weight: 700; color: #4ade80; display: none; letter-spacing: 0.3px; }
 
     /* ── Tags ── */
-    .tags-list { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tags-list { display: flex; flex-wrap: wrap; gap: 8px; }
     .tag {
-        display: inline-flex; align-items: center; gap: 6px;
-        background: var(--vscode-badge-background); color: var(--vscode-badge-foreground);
-        padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+        display: inline-flex; align-items: center; gap: 7px;
+        background: ${color}20; color: ${color};
+        border: 1px solid ${color}50;
+        padding: 5px 14px; border-radius: 4px; font-size: 13px; font-weight: 700;
+        letter-spacing: 0.3px;
     }
     .tag-remove {
-        cursor: pointer; opacity: 0.7; font-size: 14px; line-height: 1;
+        cursor: pointer; opacity: 0.6; font-size: 15px; line-height: 1;
         background: none; border: none; color: inherit; padding: 0;
     }
     .tag-remove:hover { opacity: 1; }
-    .muted { color: var(--vscode-descriptionForeground); font-style: italic; font-size: 13px; }
+    .muted { color: var(--vscode-descriptionForeground); font-style: italic; font-size: 14px; }
 
     /* ── Screenshot ── */
-    .screenshot { max-width: 100%; border: 1px solid var(--vscode-widget-border); border-radius: 8px; }
+    .screenshot {
+        max-width: 100%; border: 2px solid var(--vscode-widget-border);
+        border-radius: 8px; cursor: zoom-in;
+        transition: transform 0.2s;
+    }
+    .screenshot:hover { transform: scale(1.01); }
 
     /* ── History ── */
     .history-list { display: flex; flex-direction: column; gap: 6px; }
     .history-item {
-        display: flex; align-items: baseline; gap: 8px;
-        padding: 6px 10px; border-radius: 6px;
+        display: flex; align-items: baseline; gap: 10px;
+        padding: 8px 12px; border-radius: 5px;
         background: var(--vscode-sideBar-background);
-        font-size: 12px;
+        border-left: 3px solid ${color}40;
+        font-size: 13px;
     }
-    .history-time { color: var(--vscode-descriptionForeground); min-width: 130px; }
-    .history-user { color: #8b5cf6; font-weight: 600; }
+    .history-time { color: var(--vscode-descriptionForeground); min-width: 140px; font-size: 12px; }
+    .history-user { color: ${color}; font-weight: 700; white-space: nowrap; }
     .history-action { flex: 1; }
 </style>
 </head>
@@ -286,47 +313,48 @@ export class TicketDetailView {
     <div class="ticket-header-top">
         <span class="ticket-id">#${ticket.id}</span>
         <span class="badge">${esc(ticket.severity)}</span>
-        <span class="status-chip">${ticket.status === 0 ? '🟢 Open' : '⚫ Closed'}</span>
+        <span class="status-chip">${ticket.status === 0 ? '● Open' : '○ Closed'}</span>
     </div>
     <div class="ticket-meta">
-        👤 ${esc(ticket.admin_user)} &nbsp;·&nbsp; 🕒 ${esc(ticket.date_added)}
-        ${ticket.url ? `&nbsp;·&nbsp; 🔗 ${esc(ticket.url)}` : ''}
+        <span class="meta-item"><span class="meta-label">By</span> ${esc(ticket.admin_user)}</span>
+        <span class="meta-item"><span class="meta-label">Date</span> ${esc(ticket.date_added)}</span>
+        <span class="meta-item"><span class="meta-label">Source</span> ${esc(ticket.source)}</span>
     </div>
 </div>
 
 <div class="toolbar">
     <button class="btn btn-copilot" onclick="send('sendToCopilot')">🤖 Send to Copilot</button>
-    <button class="btn btn-ghost" onclick="send('openRelatedFiles')">📂 Files</button>
+    <button class="btn btn-ghost" onclick="send('openRelatedFiles')">📂 Open Files</button>
     ${ticket.status === 0
         ? '<button class="btn btn-success" onclick="send(\'close\')">✅ Close</button>'
         : '<button class="btn btn-warning" onclick="send(\'reopen\')">🔄 Reopen</button>'
     }
-    <button class="btn btn-ghost" onclick="send('addTag')">🏷️ Tag</button>
-    <button class="btn btn-danger" onclick="send('delete')">🗑️</button>
+    <button class="btn btn-ghost" onclick="send('addTag')">🏷️ Add Tag</button>
+    <button class="btn btn-danger" onclick="send('delete')">🗑️ Delete</button>
 </div>
 
 <div class="body">
 
 <div class="section">
-    <div class="section-title">🏷️ Tags</div>
+    <div class="section-title">Tags</div>
     <div class="tags-list">
     ${ticket.tags
         ? ticket.tags.split(',').map(t =>
             `<span class="tag">${esc(t.trim())} <button class="tag-remove" onclick="removeTag('${esc(t.trim())}')">×</button></span>`
         ).join('')
-        : '<span class="muted">No tags — click 🏷️ Tag to add one</span>'
+        : '<span class="muted">No tags yet — click Add Tag</span>'
     }
     </div>
 </div>
 
 ${ticket.url ? `
 <div class="section">
-    <div class="section-title">🔗 URL</div>
+    <div class="section-title">Internal Path</div>
     <div class="url-box">${esc(ticket.url)}</div>
 </div>` : ''}
 
 <div class="section">
-    <div class="section-title">💬 Comment</div>
+    <div class="section-title">Comment</div>
     <textarea id="comment">${esc(ticket.comment || '')}</textarea>
     <div class="save-row">
         <button class="btn btn-primary" onclick="saveField('comment', 'saveComment')">Save Comment</button>
@@ -336,24 +364,24 @@ ${ticket.url ? `
 
 ${ticket.console_log ? `
 <div class="section">
-    <div class="section-title">🖥️ Console Log</div>
+    <div class="section-title">Console Log</div>
     <pre>${esc(ticket.console_log)}</pre>
 </div>` : ''}
 
 ${ticket.network_log ? `
 <div class="section">
-    <div class="section-title">🌐 Network Log</div>
+    <div class="section-title">Network Log</div>
     <pre>${esc(ticket.network_log)}</pre>
 </div>` : ''}
 
 ${ticket.screenshot && ticket.screenshot.startsWith('data:image/') ? `
 <div class="section">
-    <div class="section-title">📸 Screenshot</div>
+    <div class="section-title">Screenshot</div>
     <img src="${ticket.screenshot}" class="screenshot" />
 </div>` : ''}
 
 <div class="section">
-    <div class="section-title">🔧 Resolution Notes</div>
+    <div class="section-title">Resolution Notes</div>
     <textarea id="resolution" placeholder="Add your fix notes here...">${esc(ticket.resolution || '')}</textarea>
     <div class="save-row">
         <button class="btn btn-primary" onclick="saveField('resolution', 'saveResolution')">Save Resolution</button>
@@ -362,7 +390,7 @@ ${ticket.screenshot && ticket.screenshot.startsWith('data:image/') ? `
 </div>
 
 <div class="section">
-    <div class="section-title">📜 History</div>
+    <div class="section-title">History</div>
     ${history.length > 0
         ? `<div class="history-list">${history.map(h => `
             <div class="history-item">
