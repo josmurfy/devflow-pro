@@ -2,7 +2,7 @@
   "name": "devflow-pro",
   "displayName": "DevFlow Pro",
   "description": "Debug Logger Manager for OpenCart 4.x — manage bug tickets, Copilot integration",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "publisher": "josmurfy",
   "icon": "resources/icon.jpg",
   "repository": {
@@ -220,10 +220,11 @@
   "scripts": {
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
+    "bundle": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --platform=node",
     "pretest": "npm run compile",
     "test": "vscode-test",
     "package": "vsce package --no-dependencies",
-    "build": "npm run compile && npm run package"
+    "build": "npm run bundle && vsce package --no-dependencies"
   },
   "devDependencies": {
     "@types/node": "^20.19.39",
@@ -231,6 +232,7 @@
     "@vscode/test-cli": "^0.0.4",
     "@vscode/test-electron": "^2.3.0",
     "@vscode/vsce": "^2.22.0",
+    "esbuild": "^0.28.0",
     "typescript": "^5.3.0"
   },
   "dependencies": {

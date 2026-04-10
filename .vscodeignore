@@ -3,11 +3,6 @@
 src/**
 **/*.map
 node_modules/**
-!node_modules/mysql2/**
-!node_modules/lru-cache/**
-!node_modules/named-placeholders/**
-!node_modules/seq-queue/**
-!node_modules/generate-function/**
 out/test/**
 .gitignore
 tsconfig.json
